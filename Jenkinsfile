@@ -1,33 +1,29 @@
 pipeline {
-    agent none
-    options { skipDefaultCheckout(true) }
+    agent {
+        docker {
+            image 'node:-alpine'
+            args '-p 3000:3000'
+        }
+    }
+    environment { 
+        CI = 'true'
+    }
     stages {
         stage('Build') {
-            agent {
-                docker {
-                    image 'node:11-alpine'
-                }
-            }
-            options { skipDefaultCheckout(false) }
             steps {
                 sh 'npm install'
-                sh 'npm install react-router-dom --save'
-                sh 'npm run build'
             }
         }
-        stage('Docker build') {
-            agent any
+        // stage('Test') {
+        //     steps {
+        //         sh './jenkins/scripts/test.sh'
+        //     }
+        // }
+        stage('Deliver') { 
             steps {
-                sh 'docker build -t nginx-react-image:latest .'
-            }
-        }
-        stage('Docker run') {
-            agent any
-            steps {
-                sh 'docker ps -f name=nginx-react-container -q | xargs --no-run-if-empty docker container stop'
-                sh 'docker container ls -a -fname=nginx-react-container -q | xargs -r docker container rm'
-                // sh 'docker rmi $(docker images -f "dangling=true" -q)'
-                sh 'docker run -d --name nginx-react-container -p 80:80 nginx-react-image:latest'
+                sh './jenkins/scripts/deliver.sh' 
+                input message: 'Finished using the web site? (Click "Proceed" to continue)' 
+                sh './jenkins/scripts/kill.sh' 
             }
         }
     }
