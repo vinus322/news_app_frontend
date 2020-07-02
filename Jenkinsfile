@@ -15,12 +15,12 @@ pipeline {
                 sh 'npm install react-router-dom --save'
             }
         }
-        stage('Test') {
-            steps {
-                sh "chmod 775 ./jenkins/scripts/test.sh"
-                sh './jenkins/scripts/test.sh'
-            }
-        }
+        // stage('Test') {
+        //     steps {
+        //         sh "chmod 775 ./jenkins/scripts/test.sh"
+        //         sh './jenkins/scripts/test.sh'
+        //     }
+        // }
         stage('Deliver') { 
             steps {
                 sh "chmod 775 ./jenkins/scripts/deliver.sh"
