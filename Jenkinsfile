@@ -1,33 +1,33 @@
 pipeline {
-    agent {
-        docker {
-            image 'node:11-alpine'
-            args '-p 3100:3100'
-        }
-    }
-    environment { 
-        CI = 'true'
-    }
+    agent none
+    options { skipDefaultCheckout(true) }
     stages {
         stage('Build') {
+            agent {
+                docker {
+                    image 'node:11-alpine'
+                }
+            }
+            options { skipDefaultCheckout(false) }
             steps {
                 sh 'npm install'
                 sh 'npm install react-router-dom --save'
+                sh 'npm run build'
             }
         }
-        // stage('Test') {
-        //     steps {
-        //         sh "chmod 775 ./jenkins/scripts/test.sh"
-        //         sh './jenkins/scripts/test.sh'
-        //     }
-        // }
-        stage('Deliver') { 
+        stage('Docker build') {
+            agent any
             steps {
-                sh "chmod 775 ./jenkins/scripts/deliver.sh"
-                sh './jenkins/scripts/deliver.sh' 
-                //input message: 'Finished using the web site? (Click "Proceed" to continue)' 
-                //sh "chmod 775 ./jenkins/scripts/kill.sh"
-                //sh './jenkins/scripts/kill.sh' 
+                sh 'docker build -t nginx-react-image:latest .'
+            }
+        }
+        stage('Docker run') {
+            agent any
+            steps {
+                sh 'docker ps -f name=nginx-react-container -q | xargs --no-run-if-empty docker container stop'
+                sh 'docker container ls -a -fname=nginx-react-container -q | xargs -r docker container rm'
+                sh 'docker rmi $(docker images -f "dangling=true" -q)'
+                sh 'docker run -d --name nginx-react-container -p 3100:3100 nginx-react-image:latest'
             }
         }
     }
